@@ -6,6 +6,8 @@ var monkey_bili = {
   cid: '',
   title: '',
   oriurl: '',
+  appkey: '85eb6835b0a1034e',
+  secretkey: '2ad42749773c441109bdc0191257a664',
 
   run: function() {
     console.log('run() --');
@@ -37,25 +39,20 @@ var monkey_bili = {
    */
   getCid: function() {
     console.log('getCid()');
-    var iframe = document.querySelector('iframe'),
-        flashvar = document.querySelector('div#bofqi embed'),
+    var scripts = document.querySelectorAll('script'),
         reg = /cid=(\d+)&aid=(\d+)/,
-        match;
-
-
-    if (iframe) {
-      match = reg.exec(iframe.src);
-    } else if (flashvar) {
-      console.log(flashvar.getAttribute('flashvars'));
-      match = reg.exec(flashvar.getAttribute('flashvars'));
-    }
-    console.log('match:', match);
-    if (match && match.length === 3) {
-      this.cid = match[1];
-      this.getVideos();
-    } else {
-      console.error('Failed to get cid!');
-    }
+        match,
+        i;
+    for (i = 0; i < scripts.length; i++) {
+      match = reg.exec(scripts[i].innerHTML);
+      console.log('match:', match);
+      if (match && match.length === 3) {
+        this.cid = match[1];
+        this.getVideos();
+        return;
+      }
+    } 
+    //console.error('Failed to get cid!');
   },
 
   /**
@@ -63,7 +60,13 @@ var monkey_bili = {
    */
   getVideos: function() {
     console.log('getVideos() -- ');
-    var url = 'http://interface.bilibili.cn/player?cid=' + this.cid,
+    var sign = this.
+        url = [
+          'http://interface.bilibili.cn/playurl?',
+          'appkey=', this.appkey,
+          '&cid=', this.cid,
+          '&sign=', sign,
+        ],
         that = this;
 
     console.log('url:', url);
@@ -75,9 +78,12 @@ var monkey_bili = {
             txt = response.responseText,
             match = reg.exec(txt);
 
+        console.log('oriurl match:', match);
         if (match && match.length === 2) {
           that.oriurl = match[1];
           that.createUI();
+        } else {
+          console.error('Failed to get oriurl');
         }
       },
     });

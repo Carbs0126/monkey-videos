@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         monkey-videos
 // @description  播放网页里的视频, 不再需要Adobe Flash Player
-// @version      1.0.7
+// @version      1.0.8
 // @license      GPLv3
 // @author       LiuLang
 // @email        gsushzhsosgsu@gmail.com
@@ -558,6 +558,27 @@ IMPORT_INCLUDES
       return null;
     }
     return xmlDoc;
+  };
+
+  /**
+   * Bitwise overflows in javascript
+   */
+  var bitwiseAnd = function(a, b) {
+    var aArr = a.toString(2).split('').reverse(),
+        bArr = b.toString(2).split('').reverse(),
+        len = Math.min(aArr.length, bArr.length),
+        i,
+        result = [];
+
+    for (i = 0; i < len; i++) {
+      if (aArr[i] === '1' && bArr[i] === '1') {
+        result.push('1');
+      } else {
+        result.push('0');
+      }
+    }
+
+    return parseInt(result.reverse().join(''), 2);
   };
 
   /**

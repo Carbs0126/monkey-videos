@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8" />
+  <title>HTML5</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+  </style>
+  </head>
+
+  <body>
+  <script>
+  var getKey = function(t) {
+    console.log('getKey() --', t);
+    for(var e = 0, s = 0; s < 8; s += 1){
+            e = 1 & t;
+            t = t >> 1;
+            e = e << 31;
+            console.log(t, e);
+            t = t + e;
+            console.log(t);
+    }
+    return t ^ 185025305;
+  };
+  var stime = 1416191994;
+  console.log(getKey(stime));
+  </script>
+  </body>
+</html>

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         monkey-videos
 // @description  播放网页里的视频, 不再需要Adobe Flash Player
-// @version      1.0.7
+// @version      1.0.8
 // @license      GPLv3
 // @author       LiuLang
 // @email        gsushzhsosgsu@gmail.com
@@ -595,6 +595,27 @@
       return null;
     }
     return xmlDoc;
+  };
+
+  /**
+   * Bitwise overflows in javascript
+   */
+  var bitwiseAnd = function(a, b) {
+    var aArr = a.toString(2).split('').reverse(),
+        bArr = b.toString(2).split('').reverse(),
+        len = Math.min(aArr.length, bArr.length),
+        i,
+        result = [];
+
+    for (i = 0; i < len; i++) {
+      if (aArr[i] === '1' && bArr[i] === '1') {
+        result.push('1');
+      } else {
+        result.push('0');
+      }
+    }
+
+    return parseInt(result.reverse().join(''), 2);
   };
 
   /**
@@ -1220,25 +1241,20 @@ var monkey_bili = {
    */
   getCid: function() {
     console.log('getCid()');
-    var iframe = document.querySelector('iframe'),
-        flashvar = document.querySelector('div#bofqi embed'),
+    var scripts = document.querySelectorAll('script'),
         reg = /cid=(\d+)&aid=(\d+)/,
-        match;
-
-
-    if (iframe) {
-      match = reg.exec(iframe.src);
-    } else if (flashvar) {
-      console.log(flashvar.getAttribute('flashvars'));
-      match = reg.exec(flashvar.getAttribute('flashvars'));
-    }
-    console.log('match:', match);
-    if (match && match.length === 3) {
-      this.cid = match[1];
-      this.getVideos();
-    } else {
-      console.error('Failed to get cid!');
-    }
+        match,
+        i;
+    for (i = 0; i < scripts.length; i++) {
+      match = reg.exec(scripts[i].innerHTML);
+      console.log('match:', match);
+      if (match && match.length === 3) {
+        this.cid = match[1];
+        this.getVideos();
+        return;
+      }
+    } 
+    console.error('Failed to get cid!');
   },
 
   /**
@@ -1258,9 +1274,12 @@ var monkey_bili = {
             txt = response.responseText,
             match = reg.exec(txt);
 
+        console.log('oriurl match:', match);
         if (match && match.length === 2) {
           that.oriurl = match[1];
           that.createUI();
+        } else {
+          console.error('Failed to get oriurl');
         }
       },
     });
@@ -2136,6 +2155,7 @@ var monkey_letv = {
    */
   addLinkToYuanxian: function() {
     console.log('addLinkToYuanxian() --');
+
     var pid = __INFO__.video.pid,
         url = 'http://www.letv.com/ptv/pplay/' + pid + '.html',
         titleLink = document.querySelector('dl.w424 dt a');
@@ -2147,34 +2167,60 @@ var monkey_letv = {
    * Get video id
    */
   getVid: function() {
-    console.log('getVid() --')
-    var input = document.querySelector('.add input'),
-        vidReg = /\/(\d+)\.html$/,
-        vidMatch;
+    console.log('getVid() --');
 
-    console.log(input);
-    if (input && input.hasAttribute('value')) {
-      vidMatch = vidReg.exec(input.getAttribute('value'));
-    } else {
-      console.error('Failed to get input element');
-      return;
-    }
+    var vidReg = /letv.com\/ptv\/vplay\/(\d+)\.html$/,
+        vidMatch = vidReg.exec(document.location.href);
 
     console.log('vidMatch: ', vidMatch);
     if (vidMatch && vidMatch.length === 2) {
       this.vid = vidMatch[1];
-      this.getTimestamp();
+      this.getVideo();
     } else {
       console.error('Failed to get video ID!');
       return;
     }
   },
 
+  getVideo: function() {
+    console.log('getVideo()--');
+    var tkey = this.calcTimeKey(Math.floor((new Date()).getTime() / 1000)),
+        url = [
+          'http://api.letv.com/mms/out/video/playJson?id=', this.vid,
+          '&platid=1&splatid=101&format=1&tkey=', tkey,
+          '&domain=www.letv.com',
+        ].join('');
+
+    console.log('url:', url);
+    GM_xmlhttpRequest({
+      url: url,
+      method: 'GET',
+      onload: function(response) {
+        var obj = JSON.parse(response.responseText);
+        console.log('response object:', obj);
+      },
+    });
+  },
+
+  calcTimeKey: function(t) {
+    console.log('calcTimeKey:', t);
+    var POW = Math.pow(2, 32) - 1;
+
+    function ror(val, rBits) {
+      return ((val & POW) >> rBits % 32) | (val << (32 - (rBits % 32)) & POW);
+      //return (bitwiseAnd(val, POW) >> rBits % 32) |
+      //       bitwiseAnd(val << (32 - (rBits % 32)), POW);
+    }
+
+    return ror(ror(t, 773625421 % 13) ^ 773625421, 773625421 % 17);
+  },
+
   /**
    * Get timestamp from server
    */
   getTimestamp: function() {
-    console.log('getTimestamp() --');
+    console.log('getTimestamp() --', this);
+
     var tn = Math.random(),
         url = 'http://api.letv.com/time?tn=' + tn.toString(),
         that = this;

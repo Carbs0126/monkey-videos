@@ -42,6 +42,7 @@ var monkey_letv = {
    */
   addLinkToYuanxian: function() {
     console.log('addLinkToYuanxian() --');
+
     var pid = __INFO__.video.pid,
         url = 'http://www.letv.com/ptv/pplay/' + pid + '.html',
         titleLink = document.querySelector('dl.w424 dt a');
@@ -53,34 +54,60 @@ var monkey_letv = {
    * Get video id
    */
   getVid: function() {
-    console.log('getVid() --')
-    var input = document.querySelector('.add input'),
-        vidReg = /\/(\d+)\.html$/,
-        vidMatch;
+    console.log('getVid() --');
 
-    console.log(input);
-    if (input && input.hasAttribute('value')) {
-      vidMatch = vidReg.exec(input.getAttribute('value'));
-    } else {
-      console.error('Failed to get input element');
-      return;
-    }
+    var vidReg = /letv.com\/ptv\/vplay\/(\d+)\.html$/,
+        vidMatch = vidReg.exec(document.location.href);
 
     console.log('vidMatch: ', vidMatch);
     if (vidMatch && vidMatch.length === 2) {
       this.vid = vidMatch[1];
-      this.getTimestamp();
+      this.getVideo();
     } else {
       console.error('Failed to get video ID!');
       return;
     }
   },
 
+  getVideo: function() {
+    console.log('getVideo()--');
+    var tkey = this.calcTimeKey(Math.floor((new Date()).getTime() / 1000)),
+        url = [
+          'http://api.letv.com/mms/out/video/playJson?id=', this.vid,
+          '&platid=1&splatid=101&format=1&tkey=', tkey,
+          '&domain=www.letv.com',
+        ].join('');
+
+    console.log('url:', url);
+    GM_xmlhttpRequest({
+      url: url,
+      method: 'GET',
+      onload: function(response) {
+        var obj = JSON.parse(response.responseText);
+        console.log('response object:', obj);
+      },
+    });
+  },
+
+  calcTimeKey: function(t) {
+    console.log('calcTimeKey:', t);
+    var POW = Math.pow(2, 32) - 1;
+
+    function ror(val, rBits) {
+      return ((val & POW) >> rBits % 32) | (val << (32 - (rBits % 32)) & POW);
+      //return (bitwiseAnd(val, POW) >> rBits % 32) |
+      //       bitwiseAnd(val << (32 - (rBits % 32)), POW);
+    }
+
+    return ror(ror(t, 773625421 % 13) ^ 773625421, 773625421 % 17);
+  },
+
   /**
    * Get timestamp from server
    */
   getTimestamp: function() {
-    console.log('getTimestamp() --');
+    console.log('getTimestamp() --', this);
+
     var tn = Math.random(),
         url = 'http://api.letv.com/time?tn=' + tn.toString(),
         that = this;

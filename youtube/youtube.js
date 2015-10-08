@@ -88,9 +88,6 @@ var monkey_youtube = {
   run: function() {
     console.log('run() --');
     this.getURLInfo();
-    this.hideAlert();
-    this.showThumb();
-    this.getVideo();
   },
 
   /**
@@ -98,42 +95,10 @@ var monkey_youtube = {
    */
   getURLInfo: function() {
     this.urlInfo = this.parseURI(unsafeWindow.location.href);
-  },
-
-  /**
-   * Show image thumb of videos.
-   */
-  showThumb: function() {
-    console.log('showThumb() --');
-    var imgs = unsafeWindow.document.querySelectorAll('img'),
-        watchMore = unsafeWindow.document.querySelector(
-            '#watch-more-related'),
-        img,
-        i;
-
-    if (watchMore) {
-      watchMore.style.display = 'block';
-    }
-    for (i = 0; img = imgs[i]; i += 1) {
-      if (img.hasAttribute('data-thumb')) {
-        img.src = img.getAttribute('data-thumb');
-      }
-    } 
-  }, 
-
-  /**
-   * Hide the alert info.
-   */
-  hideAlert: function() {
-    var alerts = unsafeWindow.document.querySelectorAll('.yt-alert'),
-        oo = unsafeWindow.document.querySelector('#oo'),
-        alert,
-        i;
-    for (i = 0; alert = alerts[i]; i += 1) {
-      alert.style.display = 'none';
-    }
-    if (oo) {
-      oo.style.display = 'none';
+    if (document.location.href.contains('/embed/')) {
+      window.location.href = this.urlInfo.replace('/embed/', '/watch?v=');
+    } else {
+      this.getVideo();
     }
   },
 
@@ -309,4 +274,6 @@ var monkey_youtube = {
 monkey.extend('www.youtube.com', [
   'http://www.youtube.com/watch?v=',
   'https://www.youtube.com/watch?v=',
+  'http://www.youtube.com/embed/',
+  'https://www.youtube.com/embed/',
 ], monkey_youtube);
